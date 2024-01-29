@@ -1,8 +1,8 @@
 // src/middleware/authMiddleware.js
 const { verifyToken } = require("../config/jwtConfig");
-
+require("dotenv").config();
 function authenticateToken(req, res, next) {
-  const token = req.headers["monyet"];
+  const token = req.headers[process.env.TOKEN_HEADER_NAME];
 
   if (!token) return res.status(401).json({ error: "Unauthorized" });
 
