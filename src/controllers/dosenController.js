@@ -1,22 +1,33 @@
 // src/controllers/dosenController.js
 const Dosen = require("../model/dosenModel");
 const Mahasiswa = require("../model/mahasiswaModel");
+const Sidang = require("../model/sidangModel");
 
-async function getAllMengujiMahasiswa(req, res) {
+async function getAllMahasiswaByDosen(req, res) {
   const { dosenId } = req.user;
+
   try {
-    const dosen = await Dosen.findById(dosenId).populate(
-      "menguji_mahasiswa.mahasiswa_id"
-    );
-    const mahasiswaList = dosen.menguji_mahasiswa.map(
-      (menguji) => menguji.mahasiswa_id
-    );
+    const dosen = await Dosen.findById(dosenId);
+
+    if (!dosen) {
+      return res.status(404).json({ error: "Dosen not found" });
+    }
+
+    const mahasiswaList = [];
+
+    for (const mengujiEntry of dosen.menguji_mahasiswa) {
+      const mahasiswa = await Mahasiswa.findById(mengujiEntry.mahasiswa_id);
+
+      if (mahasiswa) {
+        mahasiswaList.push(mahasiswa);
+      }
+    }
+
     res.json(mahasiswaList);
   } catch (error) {
     res.status(500).json({ error: "Internal Server Error" });
   }
 }
-
 async function addRevisiByDosen(req, res) {
   const { id } = req.params;
   const { revisi_text } = req.body;
@@ -112,10 +123,87 @@ async function getDosenRole(req, res) {
   }
 }
 
+async function assignPenguji(req, res) {
+  const { npm } = req.body; // Get npm directly from the request body
+
+  try {
+    // Find the Mahasiswa based on npm
+    const mahasiswa = await Mahasiswa.findOne({ npm });
+
+    if (!mahasiswa) {
+      return res.status(404).json({ error: "Mahasiswa not found" });
+    }
+
+    // Find the Sidang document for the specified mahasiswa_id
+    const sidang = await Sidang.findOne({
+      mahasiswa_id: mahasiswa._id,
+      penguji: null,
+    });
+
+    if (!sidang) {
+      return res
+        .status(404)
+        .json({ error: "Sidang not found or penguji already assigned" });
+    }
+
+    // Update the Sidang document with the Dosen's nidn as penguji
+    sidang.penguji = req.user.nidn; // Assuming req.user.nidn contains the Dosen's nidn
+    sidang.status = "pending"; // You can update other fields if needed
+
+    // Save the updated Sidang document
+    await sidang.save();
+
+    res.json({ message: "Sidang updated for uji" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+}
+async function setKoordinatorStatus(req, res) {
+  const { nidn } = req.user;
+
+  try {
+    // Cari dosen berdasarkan ID
+    const dosen = await Dosen.findOne({ nidn });
+
+    if (!dosen) {
+      return res.status(404).json({ error: "Dosen not found" });
+    }
+
+    // Cek apakah sudah ada koordinator lain
+    const existingKoordinator = await Dosen.findOne({
+      is_koordinator: true,
+      _id: { $ne: dosen._id },
+    });
+
+    if (existingKoordinator) {
+      const { nama_lengkap, nidn } = existingKoordinator;
+
+      return res.status(409).json({
+        error: "Sudah ada koordinator lain",
+        koordinator: { nama_lengkap, nidn },
+      });
+    }
+
+    // Set status koordinator menjadi true
+    dosen.is_koordinator = true;
+
+    // Simpan perubahan
+    await dosen.save();
+
+    res.json({ message: "Status koordinator berhasil diubah" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+}
+
 module.exports = {
-  getAllMengujiMahasiswa,
+  setKoordinatorStatus,
+  getAllMahasiswaByDosen,
   addRevisiByDosen,
   approveRevisi,
   addNilai,
   getDosenRole,
+  assignPenguji,
 };

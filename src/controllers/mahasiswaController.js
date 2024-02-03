@@ -1,6 +1,8 @@
 // src/controllers/mahasiswaController.js
 const Mahasiswa = require("../model/mahasiswaModel");
 const Dosen = require("../model/dosenModel");
+const Sidang = require("../model/sidangModel");
+
 async function getAllMahasiswa(req, res) {
   try {
     const mahasiswaList = await Mahasiswa.find();
@@ -129,7 +131,70 @@ async function getMahasiswaRole(req, res) {
     res.status(500).json({ error: "Internal Server Error" });
   }
 }
+async function daftarSidang(req, res) {
+  const { username, role } = req.user; // Mengambil informasi dari req.user
 
+  try {
+    // Cari mahasiswa berdasarkan NPM
+    const mahasiswa = await Mahasiswa.findOne({ username });
+
+    if (!mahasiswa) {
+      return res.status(404).json({ error: "Mahasiswa not found" });
+    }
+
+    // Dapatkan data dari body request
+    const {
+      tgl_pengajuan,
+      url_proposal,
+      judul,
+      pembimbing,
+      tahun_akademik,
+      jenis_sidang,
+      penguji,
+    } = req.body;
+
+    // Cari dosen pembimbing berdasarkan NIDN
+    const dosenPembimbing = await Dosen.findOne({ nidn: pembimbing });
+
+    if (!dosenPembimbing) {
+      return res.status(404).json({ error: "Dosen pembimbing not found" });
+    }
+
+    // Buat objek Sidang
+    const sidang = new Sidang({
+      mahasiswa_id: mahasiswa._id,
+      npm: mahasiswa.npm,
+      revisi_text: "",
+      status: "pending",
+      tgl_pengajuan,
+      url_proposal,
+      tahap: "",
+      judul,
+      pembimbing: dosenPembimbing.nidn,
+      penguji: penguji || null,
+      tahun_akademik,
+      jenis_sidang,
+    });
+
+    // Simpan data Sidang
+    await sidang.save();
+
+    res.json({ message: "Pendaftaran sidang berhasil" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+}
+
+async function getAllDosen(req, res) {
+  try {
+    const dosenList = await Dosen.find();
+    res.json(dosenList);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+}
 module.exports = {
   getAllMahasiswa,
   getMahasiswaByNPM,
@@ -137,4 +202,6 @@ module.exports = {
   getRevisiById,
   deleteRevisi,
   getMahasiswaRole,
+  daftarSidang,
+  getAllDosen,
 };

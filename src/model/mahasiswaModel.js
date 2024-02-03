@@ -19,6 +19,7 @@ const mahasiswaSchema = new mongoose.Schema({
   jenis_pengajuan_sidang: {
     type: String,
     enum: ["p1", "p2", "p3", "i1", "i2", "ta"],
+    default: "Belum ada jadwal sidang",
   },
   draft_sidang: String,
   url_aplikasi: String,

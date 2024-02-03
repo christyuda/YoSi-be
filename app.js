@@ -6,7 +6,7 @@ const authRoutes = require("./src/routes/authRoutes");
 const mahasiswaRoutes = require("./src/routes/mahasiswaRoutes");
 const dosenRoutes = require("./src/routes/dosenRoutes");
 const { authenticateToken } = require("./src/middleware/authMiddleware");
-const { pasetoConfig } = require("./src/config/jwtConfig");
+// const { pasetoConfig } = require("./src/config/jwtConfig");
 
 const app = express();
 const PORT = process.env.PORT || 3000;

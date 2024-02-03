@@ -8,6 +8,7 @@ function authenticateToken(req, res, next) {
 
   try {
     const payload = verifyToken(token);
+    console.log("Token Payload:", payload);
     req.user = payload;
     next();
   } catch (error) {

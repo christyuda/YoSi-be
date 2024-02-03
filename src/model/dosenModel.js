@@ -11,13 +11,21 @@ const dosenSchema = new mongoose.Schema({
   tanggal_lahir: Date,
   menguji_mahasiswa: [
     {
-      mahasiswa_id: mongoose.Schema.Types.ObjectId,
-      status: String,
+      mahasiswa_id: { type: mongoose.Schema.Types.ObjectId, ref: "Mahasiswa" },
+      status: {
+        type: String,
+        enum: ["pending", "approved"],
+        default: "pending",
+      },
     },
   ],
   role: {
     type: String,
     default: "dosen",
+  },
+  is_koordinator: {
+    type: Boolean,
+    default: false, // Default status tidak sebagai koordinator
   },
 });
 

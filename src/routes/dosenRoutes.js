@@ -2,18 +2,22 @@
 const express = require("express");
 const { authenticateToken } = require("../middleware/authMiddleware");
 const {
-  getAllMengujiMahasiswa,
+  getAllMahasiswaByDosen,
   addRevisiByDosen,
   approveRevisi,
   addNilai,
   getDosenRole,
+  assignPenguji,
+  setKoordinatorStatus,
 } = require("../controllers/dosenController");
 
 const router = express.Router();
 
 router.use(authenticateToken);
 
-router.get("/menguji-mahasiswa", getAllMengujiMahasiswa);
+router.patch("/set-koordinator-status", setKoordinatorStatus);
+router.post("/uji-sidang", assignPenguji);
+router.get("/menguji-mahasiswa", getAllMahasiswaByDosen);
 router.post("/:npm/revisi", addRevisiByDosen);
 router.patch("/:npm/revisi/:revisiId/approve", approveRevisi);
 router.post("/:npm/nilai", addNilai);

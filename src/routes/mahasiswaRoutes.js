@@ -8,6 +8,8 @@ const {
   getRevisiById,
   deleteRevisi,
   getMahasiswaRole,
+  daftarSidang,
+  getAllDosen,
 } = require("../controllers/mahasiswaController");
 
 const router = express.Router();
@@ -15,6 +17,9 @@ const router = express.Router();
 router.use(authenticateToken);
 
 router.get("/", getAllMahasiswa);
+router.post("/daftar-sidang", authenticateToken, daftarSidang);
+router.get("/all-dosen", authenticateToken, getAllDosen);
+
 router.get("/:npm", getMahasiswaByNPM);
 router.post("/:npm/revisi", addRevisi);
 router.get("/:npm/revisi/:revisiId", getRevisiById);
