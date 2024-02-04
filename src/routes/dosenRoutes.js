@@ -8,14 +8,15 @@ const {
   addNilai,
   getDosenRole,
   assignPenguji,
-  setKoordinatorStatus,
+  addRevisi,
 } = require("../controllers/dosenController");
 
 const router = express.Router();
 
 router.use(authenticateToken);
 
-router.patch("/set-koordinator-status", setKoordinatorStatus);
+router.post("/add-revisi", addRevisi);
+
 router.post("/uji-sidang", assignPenguji);
 router.get("/menguji-mahasiswa", getAllMahasiswaByDosen);
 router.post("/:npm/revisi", addRevisiByDosen);

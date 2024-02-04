@@ -115,6 +115,33 @@ async function deleteRevisi(req, res) {
   }
 }
 
+async function getSidangByNPM(req, res) {
+  const { npm } = req.params;
+
+  try {
+    // Cari Mahasiswa berdasarkan NPM
+    const mahasiswa = await Mahasiswa.findOne({ npm });
+
+    if (!mahasiswa) {
+      return res.status(404).json({ error: "Mahasiswa not found" });
+    }
+
+    // Cari Sidang berdasarkan mahasiswa_id
+    const sidang = await Sidang.findOne({ mahasiswa_id: mahasiswa._id });
+
+    if (!sidang) {
+      return res
+        .status(404)
+        .json({ error: "Sidang not found for this Mahasiswa" });
+    }
+
+    res.json({ sidang });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+}
+
 async function getMahasiswaRole(req, res) {
   try {
     // Mendapatkan peran mahasiswa berdasarkan username dari token
@@ -143,15 +170,8 @@ async function daftarSidang(req, res) {
     }
 
     // Dapatkan data dari body request
-    const {
-      tgl_pengajuan,
-      url_proposal,
-      judul,
-      pembimbing,
-      tahun_akademik,
-      jenis_sidang,
-      penguji,
-    } = req.body;
+    const { url_proposal, judul, pembimbing, tahun_akademik, jenis_sidang } =
+      req.body;
 
     // Cari dosen pembimbing berdasarkan NIDN
     const dosenPembimbing = await Dosen.findOne({ nidn: pembimbing });
@@ -159,6 +179,7 @@ async function daftarSidang(req, res) {
     if (!dosenPembimbing) {
       return res.status(404).json({ error: "Dosen pembimbing not found" });
     }
+    const tgl_pengajuan = new Date();
 
     // Buat objek Sidang
     const sidang = new Sidang({
@@ -168,12 +189,14 @@ async function daftarSidang(req, res) {
       status: "pending",
       tgl_pengajuan,
       url_proposal,
-      tahap: "",
+      tahap: "Pengajuan Sidang",
       judul,
       pembimbing: dosenPembimbing.nidn,
-      penguji: penguji || null,
+      penguji: null || "",
       tahun_akademik,
       jenis_sidang,
+      tgl_sidang: "",
+      tgl_approve: "",
     });
 
     // Simpan data Sidang
@@ -195,6 +218,73 @@ async function getAllDosen(req, res) {
     res.status(500).json({ error: "Internal Server Error" });
   }
 }
+// Di dalam mahasiswaController.js
+async function getSidangByNPM(req, res) {
+  const npm = req.user.npm;
+
+  try {
+    // Cari tabel sidang berdasarkan npm
+    const sidangList = await Sidang.find({ npm });
+
+    if (!sidangList || sidangList.length === 0) {
+      return res
+        .status(404)
+        .json({ error: "Tidak ada tabel sidang ditemukan" });
+    }
+
+    res.json(sidangList);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+}
+
+async function getTabelSidangById(req, res) {
+  const npm = req.user.npm;
+
+  const sidangId = req.params.sidangId;
+
+  try {
+    // Cari tabel sidang berdasarkan npm dan id sidang
+    const sidang = await Sidang.findOne({ npm, _id: sidangId });
+
+    if (!sidang) {
+      return res.status(404).json({
+        message: "Sidang tidak ditemukan",
+        status: "error",
+        data: null,
+      });
+    }
+
+    res.json({
+      message: "Sidang ditemukan",
+      status: "success",
+      data: {
+        _id: sidang._id,
+        mahasiswa_id: sidang.mahasiswa_id,
+        status: sidang.status,
+        jenis_sidang: sidang.jenis_sidang,
+        npm: sidang.npm,
+        tgl_pengajuan: sidang.tgl_pengajuan,
+        url_proposal: sidang.url_proposal,
+        judul: sidang.judul,
+        tahap: sidang.tahap,
+        pembimbing: sidang.pembimbing,
+        penguji: sidang.penguji,
+        tahun_akademik: sidang.tahun_akademik,
+        tgl_sidang: sidang.tgl_sidang,
+        revisi_text: sidang.revisi_text,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Internal Server Error",
+      status: "error",
+      data: null,
+    });
+  }
+}
 module.exports = {
   getAllMahasiswa,
   getMahasiswaByNPM,
@@ -204,4 +294,6 @@ module.exports = {
   getMahasiswaRole,
   daftarSidang,
   getAllDosen,
+  getSidangByNPM,
+  getTabelSidangById,
 };

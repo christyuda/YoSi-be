@@ -2,7 +2,13 @@ const mongoose = require("mongoose");
 
 const sidangSchema = new mongoose.Schema({
   mahasiswa_id: { type: mongoose.Schema.Types.ObjectId, ref: "Mahasiswa" },
-  revisi_text: [{ type: String }],
+  revisi_text: [
+    {
+      text: { type: String, required: true },
+      tgl_revisi: { type: Date, default: Date.now },
+      batas_waktu: { type: Date },
+    },
+  ],
   status: { type: String, enum: ["pending", "approved"], default: "pending" },
   jenis_sidang: { type: String, default: "DefaultSidang" },
   npm: { type: String },
@@ -14,6 +20,8 @@ const sidangSchema = new mongoose.Schema({
   pembimbing: { type: String, ref: "Dosen" },
   penguji: { type: String },
   tahun_akademik: { type: String },
+  tgl_sidang: { type: Date },
+  tgl_approve: { type: Date },
 });
 
 const Sidang = mongoose.model("Sidang", sidangSchema);

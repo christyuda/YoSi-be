@@ -65,7 +65,14 @@ async function login(req, res) {
     }
 
     // Jika username dan password valid, generate token
-    const token = createToken({ username: user.username, role });
+    const token = createToken({
+      username: user.username,
+      role,
+      nidn: user?.nidn,
+      npm: user?.npm,
+      nama_lengkap: user?.nama_lengkap || "nama lengkap tidak ada",
+    });
+    console.log(token);
 
     // Log informasi sukses login
     console.log(`Successful login for username=${username}, role=${role}`);

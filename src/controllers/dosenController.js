@@ -123,34 +123,44 @@ async function getDosenRole(req, res) {
   }
 }
 
+//v2
 async function assignPenguji(req, res) {
-  const { npm } = req.body; // Get npm directly from the request body
+  const { npm, jenis_sidang, tahun_akademik, tgl_sidang } = req.body;
 
   try {
-    // Find the Mahasiswa based on npm
+    // Temukan Mahasiswa berdasarkan npm
     const mahasiswa = await Mahasiswa.findOne({ npm });
 
     if (!mahasiswa) {
       return res.status(404).json({ error: "Mahasiswa not found" });
     }
 
-    // Find the Sidang document for the specified mahasiswa_id
+    // Temukan dokumen Sidang untuk mahasiswa_id tertentu
     const sidang = await Sidang.findOne({
       mahasiswa_id: mahasiswa._id,
-      penguji: null,
+      penguji: null || "",
+      jenis_sidang: jenis_sidang,
+      tahun_akademik: tahun_akademik,
+      tgl_sidang: { $exists: false },
     });
 
     if (!sidang) {
-      return res
-        .status(404)
-        .json({ error: "Sidang not found or penguji already assigned" });
+      return res.status(404).json({
+        error: "Maaf, sidang tidak ditemukan atau penguji sudah ditetapkan",
+        detail: {
+          nidn: req.user.nidn,
+          nama_lengkap: req.user?.nama_lengkap,
+        },
+      });
     }
 
-    // Update the Sidang document with the Dosen's nidn as penguji
-    sidang.penguji = req.user.nidn; // Assuming req.user.nidn contains the Dosen's nidn
-    sidang.status = "pending"; // You can update other fields if needed
+    // Perbarui dokumen Sidang dengan nidn Dosen dari token sebagai penguji
+    sidang.penguji = req.user.nidn;
+    sidang.status = "pending";
+    sidang.tahap = "sidang";
+    sidang.tgl_sidang = tgl_sidang;
 
-    // Save the updated Sidang document
+    // Simpan dokumen Sidang yang diperbarui
     await sidang.save();
 
     res.json({ message: "Sidang updated for uji" });
@@ -159,39 +169,48 @@ async function assignPenguji(req, res) {
     res.status(500).json({ error: "Internal Server Error" });
   }
 }
-async function setKoordinatorStatus(req, res) {
-  const { nidn } = req.user;
+
+async function addRevisi(req, res) {
+  const { npm, revisi_text, tgl_sidang, jenis_sidang, batas_waktu_revisi } =
+    req.body;
 
   try {
-    // Cari dosen berdasarkan ID
-    const dosen = await Dosen.findOne({ nidn });
+    // Temukan Mahasiswa berdasarkan npm
+    const mahasiswa = await Mahasiswa.findOne({ npm });
 
-    if (!dosen) {
-      return res.status(404).json({ error: "Dosen not found" });
+    if (!mahasiswa) {
+      return res.status(404).json({ error: "Mahasiswa not found" });
     }
 
-    // Cek apakah sudah ada koordinator lain
-    const existingKoordinator = await Dosen.findOne({
-      is_koordinator: true,
-      _id: { $ne: dosen._id },
+    // Temukan dokumen Sidang untuk mahasiswa_id tertentu, penguji, tgl_sidang, dan jenis_sidang
+    const sidang = await Sidang.findOne({
+      mahasiswa_id: mahasiswa._id,
+      penguji: req.user.nidn,
+      tgl_sidang: new Date(tgl_sidang),
+      jenis_sidang,
     });
 
-    if (existingKoordinator) {
-      const { nama_lengkap, nidn } = existingKoordinator;
-
-      return res.status(409).json({
-        error: "Sudah ada koordinator lain",
-        koordinator: { nama_lengkap, nidn },
+    if (!sidang) {
+      return res.status(404).json({
+        error:
+          "Maaf, sidang tidak ditemukan atau Anda bukan penguji untuk mahasiswa ini pada tanggal dan jenis sidang tersebut",
       });
     }
 
-    // Set status koordinator menjadi true
-    dosen.is_koordinator = true;
+    // Perbarui dokumen Sidang dengan revisi_text dan batas_waktu_revisi
+    sidang.revisi_text.push({
+      text: revisi_text,
+      tgl_revisi: new Date(),
+      batas_waktu: new Date(batas_waktu_revisi),
+    });
 
-    // Simpan perubahan
-    await dosen.save();
+    sidang.status = "pending";
+    sidang.tahap = "Revisian";
 
-    res.json({ message: "Status koordinator berhasil diubah" });
+    // Simpan dokumen Sidang yang diperbarui
+    await sidang.save();
+
+    res.json({ message: "Revisi added to Sidang" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -199,11 +218,11 @@ async function setKoordinatorStatus(req, res) {
 }
 
 module.exports = {
-  setKoordinatorStatus,
   getAllMahasiswaByDosen,
   addRevisiByDosen,
   approveRevisi,
   addNilai,
   getDosenRole,
   assignPenguji,
+  addRevisi,
 };

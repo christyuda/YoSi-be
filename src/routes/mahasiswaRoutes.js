@@ -10,6 +10,8 @@ const {
   getMahasiswaRole,
   daftarSidang,
   getAllDosen,
+  getSidangByNPM,
+  getTabelSidangById,
 } = require("../controllers/mahasiswaController");
 
 const router = express.Router();
@@ -19,6 +21,8 @@ router.use(authenticateToken);
 router.get("/", getAllMahasiswa);
 router.post("/daftar-sidang", authenticateToken, daftarSidang);
 router.get("/all-dosen", authenticateToken, getAllDosen);
+router.get("/sidang", authenticateToken, getSidangByNPM);
+router.get("/sidang/:sidangId", authenticateToken, getTabelSidangById);
 
 router.get("/:npm", getMahasiswaByNPM);
 router.post("/:npm/revisi", addRevisi);
