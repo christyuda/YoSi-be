@@ -9,6 +9,8 @@ const {
   getDosenRole,
   assignPenguji,
   addRevisi,
+  approveSidang,
+  giveNilai,
 } = require("../controllers/dosenController");
 
 const router = express.Router();
@@ -16,6 +18,8 @@ const router = express.Router();
 router.use(authenticateToken);
 
 router.post("/add-revisi", addRevisi);
+router.post("/approve", authenticateToken, approveSidang);
+router.post("/nilai", authenticateToken, giveNilai);
 
 router.post("/uji-sidang", assignPenguji);
 router.get("/menguji-mahasiswa", getAllMahasiswaByDosen);

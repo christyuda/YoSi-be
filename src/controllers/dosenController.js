@@ -216,6 +216,72 @@ async function addRevisi(req, res) {
     res.status(500).json({ error: "Internal Server Error" });
   }
 }
+async function approveSidang(req, res) {
+  const { npm, tgl_sidang, jenis_sidang } = req.body;
+
+  try {
+    // Cari Sidang berdasarkan npm, tanggal sidang, dan jenis sidang
+    const sidang = await Sidang.findOne({
+      npm,
+      tgl_sidang: new Date(tgl_sidang),
+      jenis_sidang,
+      penguji: req.user.nidn, // Pastikan dosen yang melakukan approve adalah penguji yang sesuai
+      status: "pending", // Hanya sidang yang berstatus pending yang dapat diapprove
+    });
+
+    if (!sidang) {
+      return res.status(404).json({
+        error: "Sidang tidak ditemukan atau tidak dapat diapprove",
+      });
+    }
+
+    // Update status sidang menjadi approved
+    sidang.status = "approved";
+    sidang.tgl_approve = new Date();
+    sidang.tahap = "Penilaian Sidang Silahkan ";
+
+    // Simpan perubahan
+    await sidang.save();
+
+    res.json({ message: "Sidang berhasil diapprove" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+}
+
+async function giveNilai(req, res) {
+  const { npm, jenis_sidang, nilai } = req.body;
+
+  try {
+    // Temukan Sidang yang memenuhi kriteria
+    const sidang = await Sidang.findOne({
+      npm,
+      jenis_sidang,
+      status: "approved", // Hanya yang sudah diapprove yang dapat diberikan nilai
+    });
+
+    if (!sidang) {
+      return res.status(404).json({
+        error: "Sidang not found or not yet approved",
+      });
+    }
+
+    // Berikan nilai pada Sidang
+    sidang.nilai = nilai;
+    sidang.status = "completed";
+    sidang.tahap =
+      "Sidang Selesai Terimakasih Sudah Mengikuti Peraturan Dengan Baik";
+
+    // Simpan perubahan pada Sidang
+    await sidang.save();
+
+    res.json({ message: "Nilai added to Sidang" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+}
 
 module.exports = {
   getAllMahasiswaByDosen,
@@ -225,4 +291,6 @@ module.exports = {
   getDosenRole,
   assignPenguji,
   addRevisi,
+  approveSidang,
+  giveNilai,
 };
