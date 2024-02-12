@@ -159,29 +159,39 @@ async function getMahasiswaRole(req, res) {
   }
 }
 async function daftarSidang(req, res) {
-  const { username, role } = req.user; // Mengambil informasi dari req.user
+  const { username, role } = req.user;
 
   try {
-    // Cari mahasiswa berdasarkan NPM
     const mahasiswa = await Mahasiswa.findOne({ username });
-
     if (!mahasiswa) {
       return res.status(404).json({ error: "Mahasiswa not found" });
     }
 
-    // Dapatkan data dari body request
-    const { url_proposal, judul, pembimbing, tahun_akademik, jenis_sidang } =
-      req.body;
+    const {
+      url_proposal,
+      judul,
+      pembimbing,
+      tahun_akademik,
+      jenis_sidang,
+      penguji,
+    } = req.body;
 
-    // Cari dosen pembimbing berdasarkan NIDN
     const dosenPembimbing = await Dosen.findOne({ nidn: pembimbing });
-
     if (!dosenPembimbing) {
       return res.status(404).json({ error: "Dosen pembimbing not found" });
     }
+
+    // Memvalidasi kuota penguji
+    const pengujiSelected = await Penguji.findOne({ nidn: penguji });
+    if (!pengujiSelected) {
+      return res.status(404).json({ error: "Dosen penguji not found" });
+    }
+    if (pengujiSelected.kuota <= 0) {
+      return res.status(400).json({ error: "Kuota penguji telah penuh" });
+    }
+
     const tgl_pengajuan = new Date();
 
-    // Buat objek Sidang
     const sidang = new Sidang({
       mahasiswa_id: mahasiswa._id,
       npm: mahasiswa.npm,
@@ -192,14 +202,17 @@ async function daftarSidang(req, res) {
       tahap: "Pengajuan Sidang",
       judul,
       pembimbing: dosenPembimbing.nidn,
-      penguji: null || "",
+      penguji: pengujiSelected.nidn,
       tahun_akademik,
       jenis_sidang,
       tgl_sidang: "",
       tgl_approve: "",
     });
 
-    // Simpan data Sidang
+    // Mengurangi kuota penguji
+    pengujiSelected.kuota -= 1;
+    await pengujiSelected.save();
+
     await sidang.save();
 
     res.json({ message: "Pendaftaran sidang berhasil" });
