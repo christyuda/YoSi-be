@@ -27,6 +27,7 @@ const sidangSchema = new mongoose.Schema({
   tgl_sidang: { type: Date },
   tgl_approve: { type: Date },
   nilai: { type: Number, default: null },
+  createdAt: { type: Date, default: Date.now },
 });
 
 const Sidang = mongoose.model("Sidang", sidangSchema);

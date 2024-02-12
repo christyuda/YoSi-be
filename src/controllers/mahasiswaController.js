@@ -174,6 +174,7 @@ async function daftarSidang(req, res) {
       tahun_akademik,
       jenis_sidang,
       penguji,
+      revisi_text,
     } = req.body;
 
     const dosenPembimbing = await Dosen.findOne({ nidn: pembimbing });
@@ -181,12 +182,13 @@ async function daftarSidang(req, res) {
       return res.status(404).json({ error: "Dosen pembimbing not found" });
     }
 
-    // Memvalidasi kuota penguji
-    const pengujiSelected = await Penguji.findOne({ nidn: penguji });
+    // Memvalidasi kuota penguji berdasarkan tipe sidang
+    const pengujiCount = await Sidang.countDocuments({ jenis_sidang, penguji });
+    const pengujiSelected = await Dosen.findOne({ nidn: penguji });
     if (!pengujiSelected) {
       return res.status(404).json({ error: "Dosen penguji not found" });
     }
-    if (pengujiSelected.kuota <= 0) {
+    if (pengujiCount >= 2) {
       return res.status(400).json({ error: "Kuota penguji telah penuh" });
     }
 
@@ -195,7 +197,7 @@ async function daftarSidang(req, res) {
     const sidang = new Sidang({
       mahasiswa_id: mahasiswa._id,
       npm: mahasiswa.npm,
-      revisi_text: "",
+      revisi_text: revisi_text,
       status: "pending",
       tgl_pengajuan,
       url_proposal,
@@ -207,6 +209,7 @@ async function daftarSidang(req, res) {
       jenis_sidang,
       tgl_sidang: "",
       tgl_approve: "",
+      createdAt: new Date(),
     });
 
     // Mengurangi kuota penguji
