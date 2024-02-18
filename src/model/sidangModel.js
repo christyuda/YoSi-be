@@ -11,7 +11,7 @@ const sidangSchema = new mongoose.Schema({
   ],
   status: {
     type: String,
-    enum: ["pending", "approved", "completed"],
+    enum: ["Pending", "Approved","Not Approved", "Completed"],
     default: "pending",
   },
   jenis_sidang: { type: String, default: "DefaultSidang" },
@@ -28,6 +28,8 @@ const sidangSchema = new mongoose.Schema({
   tgl_approve: { type: Date },
   nilai: { type: Number, default: null },
   createdAt: { type: Date, default: Date.now },
+  
+  
 });
 
 const Sidang = mongoose.model("Sidang", sidangSchema);

@@ -40,7 +40,9 @@ async function login(req, res) {
     if (!username || !password) {
       return res
         .status(400)
-        .json({ error: "Username and password are required" });
+        .json({ message: "Bad request",
+        statusCode: 400,
+        error: "Username dan password harus diisi"});
     }
 
     // Log informasi login ke konsol
@@ -52,7 +54,9 @@ async function login(req, res) {
     if (!user) {
       // Jika user tidak ditemukan, berikan respons 401 (Unauthorized)
       console.log(`User not found for username=${username}`);
-      return res.status(401).json({ error: "Invalid username or password" });
+      return res.status(404).json({ message: "User Not Found",
+      statusCode: 404,
+      error: `Akun tidak sesuai pastikan username =${username} benar`});
     }
 
     // Periksa kesesuaian password menggunakan bcrypt
@@ -61,13 +65,15 @@ async function login(req, res) {
     if (!passwordMatch) {
       // Jika password tidak sesuai, berikan respons 401 (Unauthorized)
       console.log(`Invalid password for username=${username}`);
-      return res.status(401).json({ error: "Invalid username or password" });
+      return res.status(404).json({ message: "Not Found User",
+      statusCode: 404,
+      error: `Akun tidak sesuai pastikan username = ${username} memasukan password yang benar`});
     }
 
     // Jika username dan password valid, generate token
     const token = createToken({
       username: user.username,
-      role,
+      role : user.role,
       nidn: user?.nidn,
       npm: user?.npm,
       nama_lengkap: user?.nama_lengkap || "nama lengkap tidak ada",
@@ -78,16 +84,22 @@ async function login(req, res) {
     console.log(`Successful login for username=${username}, role=${role}`);
 
     // Berikan respons 200 (OK) bersama dengan token
-    res.status(200).json({ token });
+    res.status(200).json({  
+    message: "Login successful",
+    statusCode: 200,
+    role: role,
+    token: token});
+
   } catch (error) {
     // Tangani kesalahan server dengan memberikan respons 500 (Internal Server Error)
     console.error(error);
-    res.status(500).json({ error: "Internal Server Error" });
+    res.status(500).json({message: "Internal Server Error ni",
+    statusCode: 500,});
   }
 }
-
 async function getUserByUsername(username, role) {
-  const UserModel = role === "mahasiswa" ? Mahasiswa : Dosen;
+  const lowercaseRole = role.toLowerCase(); // Mengonversi role ke huruf kecil
+  const UserModel = lowercaseRole === "mahasiswa" ? Mahasiswa : Dosen;
   return await UserModel.findOne({ username });
 }
 
